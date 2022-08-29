@@ -17,4 +17,9 @@ record Address(
         Postcode postcode
 ) {}
 
-record Postcode(String value) {}
+record Postcode(String value) {
+    @Override
+    public String toString() {
+        return value;
+    }
+}

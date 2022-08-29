@@ -13,51 +13,35 @@ import static org.assertj.core.condition.VerboseCondition.verboseCondition;
 
 class Conditions {
     static Condition<Customer> firstName(String expected) {
-        return verboseCondition(
-                it -> expected.equals(it.firstName()),
-                "first name: '%s'".formatted(expected),
-                it -> "but was: '%s'".formatted(it.firstName())
-        );
+        return equals("first name", expected, Customer::firstName);
     }
 
     static Condition<Customer> lastName(String expected) {
-        return verboseCondition(
-                it -> expected.equals(it.lastName()),
-                "last name: '%s'".formatted(expected),
-                it -> "but was: '%s'".formatted(it.lastName())
-        );
+        return equals("last name", expected, Customer::lastName);
     }
 
     static Condition<Customer> dateOfBirth(LocalDate expected) {
         return equals("date of birth", expected, Customer::dateOfBirth);
     }
 
-    static <T, K> Condition<T> equals(String description, K expected, Function<T, K> f) {
-        return verboseCondition(
-                it -> expected.equals(f.apply(it)),
-                "%s: '%s'".formatted(description, expected),
-                it -> "but was: '%s'".formatted(f.apply(it))
-        );
-    }
-
     static Condition<Customer> addressLine1(String expected) {
-        return new Condition<>(it -> expected.equals(it.address().line1()), "address line 1 '%s'".formatted(expected));
+        return equals("address line 1", expected, it -> it.address().line1());
     }
 
     static Condition<Customer> addressLine2(String expected) {
-        return new Condition<>(it -> expected.equals(it.address().line2()), "address line 2 '%s'".formatted(expected));
+        return equals("address line 2", expected, it -> it.address().line2());
     }
 
     static Condition<Customer> addressLine3(String expected) {
-        return new Condition<>(it -> expected.equals(it.address().line3()), "address line 3 '%s'".formatted(expected));
+        return equals("address line 3", expected, it -> it.address().line3());
     }
 
     static Condition<Customer> addressTown(String expected) {
-        return new Condition<>(it -> expected.equals(it.address().town()), "address town '%s'".formatted(expected));
+        return equals("address town", expected, it -> it.address().town());
     }
 
     static Condition<Customer> addressPostcode(Postcode expected) {
-        return new Condition<>(it -> expected.equals(it.address().postcode()), "address postcode '%s'".formatted(expected));
+        return equals("address postcode", expected, it -> it.address().postcode());
     }
 
     static Condition<Address> line1(String expected) {
@@ -92,6 +76,14 @@ class Conditions {
     static Condition<Customer> toConditionOnCustomer(Condition<Address> condition) {
         return new Condition<>(it ->
                 condition.matches(it.address()), condition.description().value()
+        );
+    }
+
+    static <T, K> Condition<T> equals(String description, K expected, Function<T, K> f) {
+        return verboseCondition(
+                it -> expected.equals(f.apply(it)),
+                "%s: '%s'".formatted(description, expected),
+                it -> " but was: '%s'".formatted(f.apply(it))
         );
     }
 

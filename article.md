@@ -550,65 +550,62 @@ static <T, K> Condition<T> equals(String description, K expected, Function<T, K>
     return verboseCondition(
             it -> expected.equals(f.apply(it)),
             "%s: '%s'".formatted(description, expected),
-            it -> "but was: '%s'".formatted(f.apply(it))
+            it -> " but was: '%s'".formatted(f.apply(it))
     );
 }
 ```
 
+Which leads to:
+
 ```java
-Condition<Customer> firstName(String expected) {
-    return new Condition<>(it -> expected.equals(it.firstName()), "first name '%s'".formatted(expected));
+static Condition<Customer> firstName(String expected) {
+    return equals("first name", expected, Customer::firstName);
 }
 
-Condition<Customer> lastName(String expected) {
-    return new Condition<>(it -> expected.equals(it.lastName()), "last name '%s'".formatted(expected));
+static Condition<Customer> lastName(String expected) {
+    return equals("last name", expected, Customer::lastName);
 }
 
-Condition<Customer> dateOfBirth(LocalDate expected) {
-    return new Condition<>(it -> expected.equals(it.dateOfBirth()), "date of birth '%s'".formatted(expected));
+static Condition<Customer> dateOfBirth(LocalDate expected) {
+    return equals("date of birth", expected, Customer::dateOfBirth);
 }
 
-Condition<Customer> addressLine1(String expected) {
-    return new Condition<>(it -> expected.equals(it.address().line1()), "address line 1 '%s'".formatted(expected));
+static Condition<Customer> addressLine1(String expected) {
+    return equals("address line 1", expected, it -> it.address().line1());
 }
 
-Condition<Customer> addressLine2(String expected) {
-    return new Condition<>(it -> expected.equals(it.address().line2()), "address line 2 '%s'".formatted(expected));
+static Condition<Customer> addressLine2(String expected) {
+    return equals("address line 2", expected, it -> it.address().line2());
 }
 
-Condition<Customer> addressLine3(String expected) {
-    return new Condition<>(it -> expected.equals(it.address().line3()), "address line 3 '%s'".formatted(expected));
+static Condition<Customer> addressLine3(String expected) {
+    return equals("address line 3", expected, it -> it.address().line3());
 }
 
-Condition<Customer> addressTown(String expected) {
-    return new Condition<>(it -> expected.equals(it.address().town()), "address town '%s'".formatted(expected));
+static Condition<Customer> addressTown(String expected) {
+    return equals("address town", expected, it -> it.address().town());
 }
 
-Condition<Customer> addressPostcode(Postcode expected) {
-    return new Condition<>(it -> expected.equals(it.address().postcode()), "address postcode '%s'".formatted(expected));
+static Condition<Customer> addressPostcode(Postcode expected) {
+    return equals("address postcode", expected, it -> it.address().postcode());
 }
 ```
 
-And assert using the `AllOf` condition:
+We can then use the `AllOf` condition to join multiple assertions on our Customer:
 
 ```java
-@Test
-void separateAssertionsWithConditions() {
-    var customer = retrieveCustomer();
-
-    assertThat(customer).has(
-            allOf(
-                    firstName("John"),
-                    lastName("Doe"),
-                    dateOfBirth(LocalDate.of(1980, 12, 11)),
-                    addressLine1("12 Chestnut close"),
-                    addressLine2(""),
-                    addressLine3("South Woodford"),
-                    addressTown("London"),
-                    addressPostcode(new Postcode("E18 5HT"))
-            )
-    );
-}
+assertThat(customer).has(
+        customer(
+                firstName("John"),
+                lastName("Doe"),
+                dateOfBirth(LocalDate.of(1980, 12, 11)),
+                addressLine1("12 Chestnut close"),
+                addressLine2(""),
+                addressLine3("South Woodford"),
+                addressTown("London"),
+                addressPostcode(new Postcode("E18 5HT"))
+        )
+);
 ```
 
 This approach satisfies our requirement `1.` and `3.`
@@ -617,19 +614,20 @@ Let's have a look at the test failure message:
 
 ```
 Expecting actual:
-  Customer[firstName=John, lastName=Doe, dateOfBirth=1980-12-11, address=Address[line1=12 Chestnut close, line2=, line3=South Woodford, town=Manchester, postcode=Postcode[value=M15 5HT]]]
+  Customer[firstName=John, lastName=Doe, dateOfBirth=1980-12-11, address=Address[line1=12 Chestnut close, line2=, line3=South Woodford, town=Manchester, postcode=M15 5HT]]
 to have:
 [✗] all of:[
-   [✓] first name 'John',
-   [✓] last name 'Doe',
-   [✓] date of birth '1980-12-11',
-   [✓] address line 1 '12 Chestnut close',
-   [✓] address line 2 '',
-   [✓] address line 3 'South Woodford',
-   [✗] address town 'London',
-   [✗] address postcode 'Postcode[value=E18 5HT]'
+   [✓] first name: 'John',
+   [✓] last name: 'Doe',
+   [✓] date of birth: '1980-12-11',
+   [✓] address line 1: '12 Chestnut close',
+   [✓] address line 2: '',
+   [✓] address line 3: 'South Woodford',
+   [✗] address town: 'London' but was: 'Manchester',
+   [✗] address postcode: 'E18 5HT' but was: 'M15 5HT'
 ]
 ```
+
 I would say is the most clear message so far! We also have the actual object printed on top.
 
 ### Nested conditions

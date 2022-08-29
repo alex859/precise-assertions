@@ -176,6 +176,13 @@ class ModelTest {
     }
 
     @Test
+    void verboseAssertion() {
+        var customer = retrieveCustomer();
+        assertThat(customer).has(firstName("Mike"));
+    }
+
+
+    @Test
     void separateAssertionsWithConditions() {
         var customer = retrieveCustomer();
 

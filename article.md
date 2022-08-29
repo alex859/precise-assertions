@@ -501,6 +501,27 @@ Expecting actual:
 to have first name 'Mike'
 ```
 
+The failure message is only showing the expected first name, but it would be useful to see the actual value we got, as we do 
+when we use custom asserts. This is doable by using a `VerboseCondition`:
+
+```java
+static Condition<Customer> firstName(String expected) {
+    return VerboseCondition.verboseCondition(
+            it -> expected.equals(it.firstName()),
+            "first name: '%s'".formatted(expected),
+            it -> "but was: '%s'".formatted(it.firstName())
+    );
+}
+```
+
+Which yields:
+
+```
+Expecting actual:
+  Customer[firstName=John, lastName=Doe, dateOfBirth=1980-12-11, address=Address[line1=12 Chestnut close, line2=, line3=South Woodford, town=Manchester, postcode=Postcode[value=M15 5HT]]]
+to have first name: 'Mike'but was: 'John'
+```
+
 We can add other conditions for the other fields:
 
 ```java

@@ -2,6 +2,7 @@ package org.alex859.model;
 
 import org.assertj.core.api.Condition;
 import org.assertj.core.condition.Join;
+import org.assertj.core.condition.VerboseCondition;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -11,7 +12,11 @@ import static org.assertj.core.api.Assertions.allOf;
 
 class Conditions {
     static Condition<Customer> firstName(String expected) {
-        return new Condition<>(it -> expected.equals(it.firstName()), "first name '%s'".formatted(expected));
+        return VerboseCondition.verboseCondition(
+                it -> expected.equals(it.firstName()),
+                "first name: '%s'".formatted(expected),
+                it -> "but was: '%s'".formatted(it.firstName())
+        );
     }
 
     static Condition<Customer> lastName(String expected) {

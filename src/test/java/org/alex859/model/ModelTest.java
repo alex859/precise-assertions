@@ -8,7 +8,6 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 
-import static org.alex859.model.Conditions.aCustomerWith;
 import static org.alex859.model.Conditions.address;
 import static org.alex859.model.Conditions.addressLine1;
 import static org.alex859.model.Conditions.addressLine2;
@@ -16,7 +15,6 @@ import static org.alex859.model.Conditions.addressLine3;
 import static org.alex859.model.Conditions.addressPostcode;
 import static org.alex859.model.Conditions.addressTown;
 import static org.alex859.model.Conditions.customer;
-import static org.alex859.model.Conditions.customerWith;
 import static org.alex859.model.Conditions.dateOfBirth;
 import static org.alex859.model.Conditions.firstName;
 import static org.alex859.model.Conditions.lastName;
@@ -205,9 +203,9 @@ class ModelTest {
         var customer = retrieveCustomer();
 
         assertThat(customer).is(
-                aCustomerWith(
+                customer(
                         firstName("John"),
-                        lastName("Doe"),
+                        lastName("Tilbury"),
                         dateOfBirth(LocalDate.of(1980, 12, 11)),
                         address(
                                 line1("12 Chestnut close"),
@@ -260,7 +258,7 @@ class ModelTest {
         assertSoftly(softly ->
                 softly.assertThat(customers)
                         .haveExactly(1,
-                                customerWith(
+                                customer(
                                         firstName("John"),
                                         lastName("Doe"),
                                         dateOfBirth(LocalDate.of(1980, 12, 11)),
@@ -274,7 +272,7 @@ class ModelTest {
                                 )
                         )
                         .haveExactly(1,
-                                customerWith(
+                                customer(
                                         firstName("Mike"),
                                         lastName("Bellview"),
                                         dateOfBirth(LocalDate.of(1985, 4, 10)),

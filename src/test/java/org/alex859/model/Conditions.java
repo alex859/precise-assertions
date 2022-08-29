@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
+import static org.alex859.model.NestableCondition.nestable;
 import static org.assertj.core.api.Assertions.allOf;
 import static org.assertj.core.condition.VerboseCondition.verboseCondition;
 
@@ -45,38 +46,28 @@ class Conditions {
     }
 
     static Condition<Address> line1(String expected) {
-        return new Condition<>(it -> expected.equals(it.line1()), "line 1 '%s'".formatted(expected));
+        return equals("line 1", expected, Address::line1);
     }
 
     static Condition<Address> line2(String expected) {
-        return new Condition<>(it -> expected.equals(it.line2()), "line 2 '%s'".formatted(expected));
+        return equals("line 2", expected, Address::line2);
     }
 
     static Condition<Address> line3(String expected) {
-        return new Condition<>(it -> expected.equals(it.line3()), "line 3 '%s'".formatted(expected));
+        return equals("line 3", expected, Address::line3);
     }
 
     static Condition<Address> town(String expected) {
-        return new Condition<>(it -> expected.equals(it.town()), "town '%s'".formatted(expected));
+        return equals("town", expected, Address::town);
     }
 
     static Condition<Address> postcode(Postcode expected) {
-        return new Condition<>(it -> expected.equals(it.postcode()), "postcode '%s'".formatted(expected));
+        return equals("postcode", expected, Address::postcode);
     }
 
     @SafeVarargs
     static Condition<Customer> address(Condition<Address>... conditions) {
-        List<Condition<Customer>> conditionsOnCustomer =
-                Arrays.stream(conditions)
-                        .map(Conditions::toConditionOnCustomer)
-                        .toList();
-        return new CustomizableDescriptionAllOf("address", conditionsOnCustomer);
-    }
-
-    static Condition<Customer> toConditionOnCustomer(Condition<Address> condition) {
-        return new Condition<>(it ->
-                condition.matches(it.address()), condition.description().value()
-        );
+        return nestable("address", Customer::address, conditions);
     }
 
     static <T, K> Condition<T> equals(String description, K expected, Function<T, K> f) {
@@ -89,41 +80,6 @@ class Conditions {
 
     @SafeVarargs
     static Condition<Customer> customer(Condition<Customer>... conditions) {
-        return allOf(conditions);
-    }
-
-    static class CustomizableDescriptionAllOf extends Join<Customer> {
-
-        private final String description;
-
-        @SafeVarargs
-        private CustomizableDescriptionAllOf(String string, Condition<Customer>... conditions) {
-            this(string, Arrays.stream(conditions).toList());
-        }
-
-        private CustomizableDescriptionAllOf(String string, Iterable<Condition<Customer>> conditions) {
-            super(conditions);
-            this.description = string;
-        }
-
-        @Override
-        public boolean matches(Customer value) {
-            return conditions().stream().allMatch(condition -> condition.matches(value));
-        }
-
-        @Override
-        public String descriptionPrefix() {
-            return description;
-        }
-    }
-
-    @SafeVarargs
-    static Condition<Customer> aCustomerWith(Condition<Customer>... conditions) {
-        return customerWith(conditions);
-    }
-
-    @SafeVarargs
-    static Condition<Customer> customerWith(Condition<Customer>... conditions) {
-        return new CustomizableDescriptionAllOf("a customer with", conditions);
+        return nestable("customer", conditions);
     }
 }

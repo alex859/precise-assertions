@@ -635,242 +635,77 @@ I would say is the most clear message so far! We also have the actual object pri
 What if we wanted the address conditions to be reusable, i.e. expressed as `Condition<Address>`?
 
 ```java
-Condition<Address> line1(String expected) {
-    return new Condition<>(it -> expected.equals(it.line1()), "line 1 '%s'".formatted(expected));
+static Condition<Address> line1(String expected) {
+    return equals("line 1", expected, Address::line1);
 }
 
-Condition<Address> line2(String expected) {
-    return new Condition<>(it -> expected.equals(it.line2()), "line 2 '%s'".formatted(expected));
+static Condition<Address> line2(String expected) {
+    return equals("line 2", expected, Address::line2);
 }
 
-Condition<Address> line3(String expected) {
-    return new Condition<>(it -> expected.equals(it.line3()), "line 3 '%s'".formatted(expected));
+static Condition<Address> line3(String expected) {
+    return equals("line 3", expected, Address::line3);
 }
 
-Condition<Address> town(String expected) {
-    return new Condition<>(it -> expected.equals(it.town()), "town '%s'".formatted(expected));
+static Condition<Address> town(String expected) {
+    return equals("town", expected, Address::town);
 }
 
-Condition<Address> postcode(Postcode expected) {
-    return new Condition<>(it -> expected.equals(it.postcode()), "postcode '%s'".formatted(expected));
-}
-```
-
-We can still use those conditions when asserting on a `Customer`:
-
-```java
-static Condition<Customer> toConditionOnCustomer(Condition<Address> condition) {
-    return new Condition<>(it ->
-            condition.matches(it.address()), condition.description().value()
-    );
+static Condition<Address> postcode(Postcode expected) {
+    return equals("postcode", expected, Address::postcode);
 }
 ```
 
-and wrap them in a single condition on a `Customer`:
+`AssertJ` has the concept of `NestableCondition` that we can use::
 
 ```java
 @SafeVarargs
-final Condition<Customer> address(Condition<Address>... conditions) {
-    return allOf(
-            Arrays.stream(conditions)
-                    .map(Conditions::toConditionOnCustomer)
-                    .toList()
-    );
+static Condition<Customer> customerWith(Condition<Customer>... conditions) {
+    return nestable("customer", conditions);
+}
+
+@SafeVarargs
+static Condition<Customer> address(Condition<Address>... conditions) {
+    return nestable("address", Customer::address, conditions);
 }
 ```
 
 And we can use it in our test as:
 
 ```java
-@Test
-void separateAssertionsWithConditions() {
-    var customer = retrieveCustomer();
+assertThat(customer).is(
+        customer(
+                firstName("John"),
+                lastName("Tilbury"),
+                dateOfBirth(LocalDate.of(1980, 12, 11)),
+                address(
+                        line1("12 Chestnut close"),
+                        line2(""),
+                        line3("South Woodford"),
+                        town("London"),
+                        postcode(new Postcode("E18 5HT"))
+                )
 
-    assertThat(customer).has(
-            allOf(
-                    firstName("John"),
-                    lastName("Doe"),
-                    dateOfBirth(LocalDate.of(1980, 12, 11)),
-                    address(
-                            line1("12 Chestnut close"),
-                            line2(""),
-                            line3("South Woodford"),
-                            town("London"),
-                            postcode(new Postcode("E18 5HT"))
-                    )
-
-            )
-    );
-}
+        )
+);
 ```
 
 with the following error message:
 
 ```
 Expecting actual:
-  Customer[firstName=John, lastName=Doe, dateOfBirth=1980-12-11, address=Address[line1=12 Chestnut close, line2=, line3=South Woodford, town=Manchester, postcode=Postcode[value=M15 5HT]]]
-to have:
-[✗] all of:[
-   [✓] first name 'John',
-   [✓] last name 'Doe',
-   [✓] date of birth '1980-12-11',
-   [✗] all of:[
-      [✓] line 1 '12 Chestnut close',
-      [✓] line 2 '',
-      [✓] line 3 'South Woodford',
-      [✗] town 'London',
-      [✗] postcode 'Postcode[value=E18 5HT]'
-   ]
-]
-```
-
-### Improve assertion code and message
-
-It would be nice to have something more domain related than `allOf` in both the test and the assertions.
-
-For the test case we can just have a factory method for the `allOf`:
-
-```java
-@SafeVarargs
-final Condition<Customer> customer(Condition<Customer>... conditions){
-    return allOf(conditions);
-}
-```
-
-and using the `is` method instead of `has`:
-
-```java
-@Test
-void separateAssertionsWithConditionsNestedAddress() {
-    var customer = retrieveCustomer();
-
-    assertThat(customer).is(
-            customer(
-                    firstName("John"),
-                    lastName("Doe"),
-                    dateOfBirth(LocalDate.of(1980, 12, 11)),
-                    address(
-                            line1("12 Chestnut close"),
-                            line2(""),
-                            line3("South Woodford"),
-                            town("London"),
-                            postcode(new Postcode("E18 5HT"))
-                    )
-
-            )
-    );
-}
-```
-
-with the error message:
-
-```
-Expecting actual:
-  Customer[firstName=John, lastName=Doe, dateOfBirth=1980-12-11, address=Address[line1=12 Chestnut close, line2=, line3=South Woodford, town=Manchester, postcode=Postcode[value=M15 5HT]]]
+  Customer[firstName=John, lastName=Doe, dateOfBirth=1980-12-11, address=Address[line1=12 Chestnut close, line2=, line3=South Woodford, town=Manchester, postcode=M15 5HT]]
 to be:
-[✗] all of:[
-   [✓] first name 'John',
-   [✗] last name 'Doe1',
-   [✓] date of birth '1980-12-11',
-   [✗] all of:[
-      [✓] line 1 '12 Chestnut close',
-      [✓] line 2 '',
-      [✓] line 3 'South Woodford',
-      [✗] town 'London',
-      [✗] postcode 'Postcode[value=E18 5HT]'
-   ]
-]
-```
-
-We want also to get rid of the `all of` in the message. One thing we can do is duplicating the `AllOf` implementation
-and changing the `decriptionPrefix`, e,g:
-
-```java
-class CustomizableDescriptionAllOf extends Join<Customer> {
-
-    private final String description;
-
-    @SafeVarargs
-    private CustomizableDescriptionAllOf(String string, Condition<Customer>... conditions) {
-        this(string, Arrays.stream(conditions).toList());
-    }
-
-    private CustomizableDescriptionAllOf(String string, Iterable<Condition<Customer>> conditions) {
-        super(conditions);
-        this.description = string;
-    }
-
-    @Override
-    public boolean matches(Customer value) {
-        return conditions().stream().allMatch(condition -> condition.matches(value));
-    }
-
-    @Override
-    public String descriptionPrefix() {
-        return description;
-    }
-}
-```
-
-and then have:
-
-```java
-@SafeVarargs
-static Condition<Customer> aCustomerWith(Condition<Customer>... conditions) {
-    return new CustomizableDescriptionAllOf("a customer with", conditions);
-}
-
-@SafeVarargs
-static Condition<Customer> address(Condition<Address>... conditions) {
-    List<Condition<Customer>> conditionsOnCustomer =
-        Arrays.stream(conditions)
-            .map(Conditions::toConditionOnCustomer)
-            .toList();
-    return new CustomizableDescriptionAllOf("address", conditionsOnCustomer);
-}
-```
-
-The test finally becomes:
-
-```java
-@Test
-void separateAssertionsWithConditionsNestedAddress() {
-    var customer = retrieveCustomer();
-
-    assertThat(customer).is(
-            aCustomerWith(
-                    firstName("John"),
-                    lastName("Doe"),
-                    dateOfBirth(LocalDate.of(1980, 12, 11)),
-                    address(
-                            line1("12 Chestnut close"),
-                            line2(""),
-                            line3("South Woodford"),
-                            town("London"),
-                            postcode(new Postcode("E18 5HT"))
-                    )
-
-            )
-    );
-}
-```
-
-and the assertion error:
-
-```
-Expecting actual:
-  Customer[firstName=John, lastName=Doe, dateOfBirth=1980-12-11, address=Address[line1=12 Chestnut close, line2=, line3=South Woodford, town=Manchester, postcode=Postcode[value=M15 5HT]]]
-to be:
-[✗] a customer with:[
-   [✓] first name 'John',
-   [✓] last name 'Doe',
-   [✓] date of birth '1980-12-11',
+[✗] customer:[
+   [✓] first name: 'John',
+   [✗] last name: 'Tilbury' but was: 'Doe',
+   [✓] date of birth: '1980-12-11',
    [✗] address:[
-      [✓] line 1 '12 Chestnut close',
-      [✓] line 2 '',
-      [✓] line 3 'South Woodford',
-      [✗] town 'London',
-      [✗] postcode 'Postcode[value=E18 5HT]'
+      [✓] line 1: '12 Chestnut close',
+      [✓] line 2: '',
+      [✓] line 3: 'South Woodford',
+      [✗] town: 'London' but was: 'Manchester',
+      [✗] postcode: 'E18 5HT' but was: 'M15 5HT'
    ]
 ]
 ```

@@ -2,17 +2,18 @@ package org.alex859.model;
 
 import org.assertj.core.api.Condition;
 import org.assertj.core.condition.Join;
-import org.assertj.core.condition.VerboseCondition;
 
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.allOf;
+import static org.assertj.core.condition.VerboseCondition.verboseCondition;
 
 class Conditions {
     static Condition<Customer> firstName(String expected) {
-        return VerboseCondition.verboseCondition(
+        return verboseCondition(
                 it -> expected.equals(it.firstName()),
                 "first name: '%s'".formatted(expected),
                 it -> "but was: '%s'".formatted(it.firstName())
@@ -20,11 +21,23 @@ class Conditions {
     }
 
     static Condition<Customer> lastName(String expected) {
-        return new Condition<>(it -> expected.equals(it.lastName()), "last name '%s'".formatted(expected));
+        return verboseCondition(
+                it -> expected.equals(it.lastName()),
+                "last name: '%s'".formatted(expected),
+                it -> "but was: '%s'".formatted(it.lastName())
+        );
     }
 
     static Condition<Customer> dateOfBirth(LocalDate expected) {
-        return new Condition<>(it -> expected.equals(it.dateOfBirth()), "date of birth '%s'".formatted(expected));
+        return equals("date of birth", expected, Customer::dateOfBirth);
+    }
+
+    static <T, K> Condition<T> equals(String description, K expected, Function<T, K> f) {
+        return verboseCondition(
+                it -> expected.equals(f.apply(it)),
+                "%s: '%s'".formatted(description, expected),
+                it -> "but was: '%s'".formatted(f.apply(it))
+        );
     }
 
     static Condition<Customer> addressLine1(String expected) {

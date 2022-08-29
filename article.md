@@ -522,7 +522,38 @@ Expecting actual:
 to have first name: 'Mike'but was: 'John'
 ```
 
-We can add other conditions for the other fields:
+We can add verbose conditions for other fields:
+
+```java
+static Condition<Customer> lastName(String expected) {
+    return verboseCondition(
+            it -> expected.equals(it.lastName()),
+            "last name: '%s'".formatted(expected),
+            it -> "but was: '%s'".formatted(it.lastName())
+    );
+}
+
+static Condition<Customer> dateOfBirth(LocalDate expected) {
+    return verboseCondition(
+            it -> expected.equals(it.dateOfBirth()),
+            "date of birth: '%s'".formatted(expected),
+            it -> "but was: '%s'".formatted(it.dateOfBirth())
+    );
+}
+```
+
+We easily notice some duplication here: the only thing that varies is the way we get the actual value and the field's description.
+We can make ourselves a factory method:
+
+```java
+static <T, K> Condition<T> equals(String description, K expected, Function<T, K> f) {
+    return verboseCondition(
+            it -> expected.equals(f.apply(it)),
+            "%s: '%s'".formatted(description, expected),
+            it -> "but was: '%s'".formatted(f.apply(it))
+    );
+}
+```
 
 ```java
 Condition<Customer> firstName(String expected) {

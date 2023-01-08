@@ -5,7 +5,6 @@ import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.List;
 
 import static org.alex859.model.Conditions.address;
@@ -24,8 +23,11 @@ import static org.alex859.model.Conditions.line3;
 import static org.alex859.model.Conditions.postcode;
 import static org.alex859.model.Conditions.town;
 import static org.alex859.model.CustomerAssert.assertThat;
+import static org.assertj.core.api.Assertions.allOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import static org.assertj.core.condition.CollectionsConditions.contains;
+import static org.assertj.core.condition.CollectionsConditions.elementAt;
 
 class ModelTest {
     @Test
@@ -266,8 +268,8 @@ class ModelTest {
                                                 line1("12 Chestnut close"),
                                                 line2(""),
                                                 line3("South Woodford"),
-                                                town("London"),
-                                                postcode(new Postcode("E18 5HT"))
+                                                town("Manchester"),
+                                                postcode(new Postcode("M15 5HT"))
                                         )
                                 )
                         )
@@ -288,7 +290,73 @@ class ModelTest {
         );
     }
 
-    private Collection<Customer> retrieveCustomers() {
+    @Test
+    void assertOnCollectionWithNestableConditions() {
+        var customers = retrieveCustomers();
+        assertThat(customers).has(allOf(
+                        contains(customer(
+                                        firstName("John"),
+                                        lastName("Doe"),
+                                        dateOfBirth(LocalDate.of(1980, 12, 11)),
+                                        address(
+                                                line1("12 Chestnut close"),
+                                                line2(""),
+                                                line3("South Woodford"),
+                                                town("Manchester"),
+                                                postcode(new Postcode("M15 5HT"))
+                                        )
+                                )
+                        ),
+                        contains(customer(
+                                firstName("Mike"),
+                                lastName("Bellview"),
+                                dateOfBirth(LocalDate.of(1985, 4, 10)),
+                                address(
+                                        line1("5 Holy Street"),
+                                        line2(""),
+                                        line3(""),
+                                        town("Glasgow"),
+                                        postcode(new Postcode("G52 4AB"))
+                                )
+                        ))
+                )
+        );
+    }
+
+    @Test
+    void assertOnCollectionWithNestableConditionsInOrder() {
+        var customers = retrieveCustomers();
+        assertThat(customers).has(allOf(
+                        elementAt(0, customer(
+                                        firstName("John"),
+                                        lastName("Doe"),
+                                        dateOfBirth(LocalDate.of(1980, 12, 11)),
+                                        address(
+                                                line1("12 Chestnut close"),
+                                                line2(""),
+                                                line3("South Woodford"),
+                                                town("Manchester"),
+                                                postcode(new Postcode("M15 5HT"))
+                                        )
+                                )
+                        ),
+                        elementAt(1, customer(
+                                firstName("Mike"),
+                                lastName("Bellview"),
+                                dateOfBirth(LocalDate.of(1985, 4, 10)),
+                                address(
+                                        line1("5 Holy Street"),
+                                        line2(""),
+                                        line3(""),
+                                        town("Glasgow"),
+                                        postcode(new Postcode("G52 4AB"))
+                                )
+                        ))
+                )
+        );
+    }
+
+    private List<Customer> retrieveCustomers() {
         return List.of(
                 new Customer(
                         "John",

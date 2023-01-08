@@ -1,15 +1,11 @@
 package org.alex859.model;
 
 import org.assertj.core.api.Condition;
-import org.assertj.core.condition.Join;
 
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
 import java.util.function.Function;
 
-import static org.alex859.model.NestableCondition.nestable;
-import static org.assertj.core.api.Assertions.allOf;
+import static org.assertj.core.condition.NestableCondition.nestable;
 import static org.assertj.core.condition.VerboseCondition.verboseCondition;
 
 class Conditions {

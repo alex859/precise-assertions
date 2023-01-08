@@ -797,8 +797,8 @@ void assertOnCollectionWithConditions() {
                             line1("12 Chestnut close"),
                             line2(""),
                             line3("South Woodford"),
-                            town("London"),
-                            postcode(new Postcode("E18 5HT"))
+                            town("Manchester"),
+                            postcode(new Postcode("M15 5HT"))
                         )
                     )
                 )
@@ -823,44 +823,176 @@ void assertOnCollectionWithConditions() {
 which gives us
 
 ```
-Multiple Failures (2 failures)
--- failure 1 --
 Expecting elements:
-  [Customer[firstName=John, lastName=Doe, dateOfBirth=1980-12-11, address=Address[line1=12 Chestnut close, line2=, line3=South Woodford, town=Manchester, postcode=Postcode[value=M15 5HT]]],
-    Customer[firstName=Mike, lastName=Bellview, dateOfBirth=1985-04-10, address=Address[line1=5 Holy street, line2=, line3=, town=London, postcode=Postcode[value=E18 4AB]]]]
-to have exactly 1 times a customer with:[
-   first name 'John',
-   last name 'Doe',
-   date of birth '1980-12-11',
+  [Customer[firstName=John, lastName=Doe, dateOfBirth=1980-12-11, address=Address[line1=12 Chestnut close, line2=, line3=South Woodford, town=Manchester, postcode=M15 5HT]],
+    Customer[firstName=Mike, lastName=Bellview, dateOfBirth=1985-04-10, address=Address[line1=5 Holy street, line2=, line3=, town=London, postcode=E18 4AB]]]
+to have exactly 1 times customer:[
+   first name: 'Mike',
+   last name: 'Bellview',
+   date of birth: '1985-04-10',
    address:[
-      line 1 '12 Chestnut close',
-      line 2 '',
-      line 3 'South Woodford',
-      town 'London',
-      postcode 'Postcode[value=E18 5HT]'
-   ]
-]
-at ModelTest.lambda$assertOnCollectionWithConditions$0(ModelTest.java:238)
--- failure 2 --
-Expecting elements:
-  [Customer[firstName=John, lastName=Doe, dateOfBirth=1980-12-11, address=Address[line1=12 Chestnut close, line2=, line3=South Woodford, town=Manchester, postcode=Postcode[value=M15 5HT]]],
-    Customer[firstName=Mike, lastName=Bellview, dateOfBirth=1985-04-10, address=Address[line1=5 Holy street, line2=, line3=, town=London, postcode=Postcode[value=E18 4AB]]]]
-to have exactly 1 times a customer with:[
-   first name 'Mike',
-   last name 'Bellview',
-   date of birth '1985-04-10',
-   address:[
-      line 1 '5 Holy Street',
-      line 2 '',
-      line 3 '',
-      town 'Glasgow',
-      postcode 'Postcode[value=G52 4AB]'
+      line 1: '5 Holy Street',
+      line 2: '',
+      line 3: '',
+      town: 'Glasgow',
+      postcode: 'G52 4AB'
    ]
 ]
 ```
 
 This again is more readable than the message we got using the `contains` approach.
 
+We can still do better using the same nestable conditions approach used earlier.
+
+```java
+@Test
+void assertOnCollectionWithNestableConditions() {
+    var customers = retrieveCustomers();
+    assertThat(customers).has(allOf(
+                    contains(customer(
+                                    firstName("John"),
+                                    lastName("Doe"),
+                                    dateOfBirth(LocalDate.of(1980, 12, 11)),
+                                    address(
+                                            line1("12 Chestnut close"),
+                                            line2(""),
+                                            line3("South Woodford"),
+                                            town("Manchester"),
+                                            postcode(new Postcode("M15 5HT"))
+                                    )
+                            )
+                    ),
+                    contains(customer(
+                            firstName("Mike"),
+                            lastName("Bellview"),
+                            dateOfBirth(LocalDate.of(1985, 4, 10)),
+                            address(
+                                    line1("5 Holy Street"),
+                                    line2(""),
+                                    line3(""),
+                                    town("Glasgow"),
+                                    postcode(new Postcode("G52 4AB"))
+                            )
+                    ))
+            )
+    );
+}
+```
+
+which gives us:
+
+```
+Expecting actual:
+  [Customer[firstName=John, lastName=Doe, dateOfBirth=1980-12-11, address=Address[line1=12 Chestnut close, line2=, line3=South Woodford, town=Manchester, postcode=M15 5HT]],
+    Customer[firstName=Mike, lastName=Bellview, dateOfBirth=1985-04-10, address=Address[line1=5 Holy street, line2=, line3=, town=London, postcode=E18 4AB]]]
+to have:
+[✗] all of:[
+   [✓] contains:[
+      customer:[
+         first name: 'John',
+         last name: 'Doe',
+         date of birth: '1980-12-11',
+         address:[
+            line 1: '12 Chestnut close',
+            line 2: '',
+            line 3: 'South Woodford',
+            town: 'Manchester',
+            postcode: 'M15 5HT'
+         ]
+      ]
+   ],
+   [✗] contains:[
+      customer:[
+         first name: 'Mike',
+         last name: 'Bellview',
+         date of birth: '1985-04-10',
+         address:[
+            line 1: '5 Holy Street',
+            line 2: '',
+            line 3: '',
+            town: 'Glasgow',
+            postcode: 'G52 4AB'
+         ]
+      ]
+   ]
+]
+```
+
+Or, if we are interested in the order of the items:
+
+```java
+@Test
+void assertOnCollectionWithNestableConditionsInOrder() {
+    var customers = retrieveCustomers();
+    assertThat(customers).has(allOf(
+                    elementAt(0, customer(
+                                    firstName("John"),
+                                    lastName("Doe"),
+                                    dateOfBirth(LocalDate.of(1980, 12, 11)),
+                                    address(
+                                            line1("12 Chestnut close"),
+                                            line2(""),
+                                            line3("South Woodford"),
+                                            town("Manchester"),
+                                            postcode(new Postcode("M15 5HT"))
+                                    )
+                            )
+                    ),
+                    elementAt(1, customer(
+                            firstName("Mike"),
+                            lastName("Bellview"),
+                            dateOfBirth(LocalDate.of(1985, 4, 10)),
+                            address(
+                                    line1("5 Holy Street"),
+                                    line2(""),
+                                    line3(""),
+                                    town("Glasgow"),
+                                    postcode(new Postcode("G52 4AB"))
+                            )
+                    ))
+            )
+    );
+}
+```
+
+which gives as assertion error:
+
+```
+Expecting actual:
+  [Customer[firstName=John, lastName=Doe, dateOfBirth=1980-12-11, address=Address[line1=12 Chestnut close, line2=, line3=South Woodford, town=Manchester, postcode=M15 5HT]],
+    Customer[firstName=Mike, lastName=Bellview, dateOfBirth=1985-04-10, address=Address[line1=5 Holy street, line2=, line3=, town=London, postcode=E18 4AB]]]
+to have:
+[✗] all of:[
+   [✓] element at 0:[
+      [✓] customer:[
+         [✓] first name: 'John',
+         [✓] last name: 'Doe',
+         [✓] date of birth: '1980-12-11',
+         [✓] address:[
+            [✓] line 1: '12 Chestnut close',
+            [✓] line 2: '',
+            [✓] line 3: 'South Woodford',
+            [✓] town: 'Manchester',
+            [✓] postcode: 'M15 5HT'
+         ]
+      ]
+   ],
+   [✗] element at 1:[
+      [✗] customer:[
+         [✓] first name: 'Mike',
+         [✓] last name: 'Bellview',
+         [✓] date of birth: '1985-04-10',
+         [✗] address:[
+            [✗] line 1: '5 Holy Street' but was: '5 Holy street',
+            [✓] line 2: '',
+            [✓] line 3: '',
+            [✗] town: 'Glasgow' but was: 'London',
+            [✗] postcode: 'G52 4AB' but was: 'E18 4AB'
+         ]
+      ]
+   ]
+]
+```
 
 ## Summary
 
